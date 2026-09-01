@@ -1,0 +1,120 @@
+{
+  "id": "hvac-inspection",
+  "version": 3,
+  "title": "HVAC unit inspection",
+  "summaryTemplate": "{site_name} · Unit {unit_id}",
+  "sections": [
+    {
+      "id": "site",
+      "title": "Site",
+      "fields": [
+        {
+          "id": "site_name",
+          "type": "text",
+          "label": "Site name",
+          "required": true,
+          "placeholder": "e.g. Atlantic Ave warehouse"
+        },
+        {
+          "id": "unit_id",
+          "type": "barcode",
+          "label": "Unit tag",
+          "help": "Scan the asset tag on the side panel, or type it in.",
+          "required": true
+        },
+        {
+          "id": "inspected_on",
+          "type": "date",
+          "label": "Inspection date",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "condition",
+      "title": "Condition",
+      "fields": [
+        {
+          "id": "unit_running",
+          "type": "boolean",
+          "label": "Unit was running on arrival"
+        },
+        {
+          "id": "supply_temp",
+          "type": "number",
+          "label": "Supply air temperature",
+          "unit": "°F",
+          "min": -20,
+          "max": 200,
+          "visibleWhen": { "field": "unit_running", "equals": true }
+        },
+        {
+          "id": "return_temp",
+          "type": "number",
+          "label": "Return air temperature",
+          "unit": "°F",
+          "min": -20,
+          "max": 200,
+          "visibleWhen": { "field": "unit_running", "equals": true }
+        },
+        {
+          "id": "not_running_reason",
+          "type": "select",
+          "label": "Why was it not running?",
+          "required": true,
+          "visibleWhen": { "field": "unit_running", "equals": false },
+          "options": [
+            { "value": "no_power", "label": "No power at disconnect" },
+            { "value": "locked_out", "label": "Control lockout" },
+            { "value": "seized", "label": "Compressor seized" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        {
+          "id": "faults",
+          "type": "multiselect",
+          "label": "Faults observed",
+          "options": [
+            { "value": "refrigerant_leak", "label": "Refrigerant leak" },
+            { "value": "dirty_coil", "label": "Dirty condenser coil" },
+            { "value": "belt_wear", "label": "Belt wear" },
+            { "value": "corrosion", "label": "Cabinet corrosion" },
+            { "value": "noise", "label": "Abnormal noise" }
+          ]
+        },
+        {
+          "id": "leak_location",
+          "type": "text",
+          "label": "Where is the leak?",
+          "required": true,
+          "visibleWhen": { "field": "faults", "oneOf": ["refrigerant_leak"] }
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "title": "Evidence",
+      "fields": [
+        {
+          "id": "photos",
+          "type": "photo",
+          "label": "Photos",
+          "help": "Nameplate, plus anything you called out as a fault.",
+          "maxPhotos": 8
+        },
+        {
+          "id": "notes",
+          "type": "longtext",
+          "label": "Notes",
+          "placeholder": "Anything the office should know before quoting."
+        },
+        {
+          "id": "tech_signature",
+          "type": "signature",
+          "label": "Technician signature",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
