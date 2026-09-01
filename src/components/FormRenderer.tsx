@@ -9,7 +9,8 @@ import {
   View,
 } from 'react-native';
 import type { FieldError, FormSchema, FormValues } from '../schema/types';
-import { isVisible, validate } from '../schema/types';
+import { isVisible, localized, validate } from '../schema/types';
+import { useI18n } from '../i18n';
 import { Field } from './fields';
 import { color, radius, space, TOUCH, type } from './theme';
 
@@ -31,6 +32,7 @@ export function FormRenderer({
   onAutosave,
   onSubmit,
 }: Props) {
+  const { t, locale } = useI18n();
   const [values, setValues] = useState<FormValues>(initialValues);
   const [errors, setErrors] = useState<FieldError[]>([]);
   const [touched, setTouched] = useState(false);
@@ -52,20 +54,20 @@ export function FormRenderer({
 
         // Only re-validate once the tech has tried to submit. Nagging while
         // someone is still typing the first character is hostile.
-        if (touched) setErrors(validate(schema, next));
+        if (touched) setErrors(validate(schema, next, locale));
 
         return next;
       });
     },
-    [onAutosave, schema, touched],
+    [locale, onAutosave, schema, touched],
   );
 
   const handleSubmit = useCallback(() => {
     setTouched(true);
-    const found = validate(schema, values);
+    const found = validate(schema, values, locale);
     setErrors(found);
     if (found.length === 0) onSubmit(values);
-  }, [onSubmit, schema, values]);
+  }, [locale, onSubmit, schema, values]);
 
   return (
     <KeyboardAvoidingView
@@ -82,12 +84,13 @@ export function FormRenderer({
           const visible = section.fields.filter((f) => isVisible(f, values));
           if (visible.length === 0) return null;
 
+          const sectionTitle = localized(section.title, section.titles, locale);
+          const sectionDesc = localized(section.description, section.descriptions, locale);
+
           return (
             <View key={section.id} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              {section.description ? (
-                <Text style={styles.sectionDesc}>{section.description}</Text>
-              ) : null}
+              <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+              {sectionDesc ? <Text style={styles.sectionDesc}>{sectionDesc}</Text> : null}
 
               {visible.map((field) => (
                 <Field
@@ -104,7 +107,9 @@ export function FormRenderer({
 
         {touched && errors.length > 0 ? (
           <Text style={styles.summary}>
-            {errors.length} {errors.length === 1 ? 'field needs' : 'fields need'} attention above.
+            {errors.length === 1
+              ? t('form.needsAttentionOne')
+              : t('form.needsAttention', { n: errors.length })}
           </Text>
         ) : null}
 
@@ -112,9 +117,7 @@ export function FormRenderer({
           <Text style={styles.submitText}>{submitLabel}</Text>
         </Pressable>
 
-        <Text style={styles.footnote}>
-          Saved on this phone. It sends itself when you have signal.
-        </Text>
+        <Text style={styles.footnote}>{t('form.footnote')}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

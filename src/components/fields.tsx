@@ -10,7 +10,9 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import type { FormField } from '../schema/types';
+import { localized, type FormField } from '../schema/types';
+import { useI18n } from '../i18n';
+import { SignaturePad } from './SignaturePad';
 import { color, radius, space, TOUCH, type } from './theme';
 
 export interface FieldProps {
@@ -21,13 +23,17 @@ export interface FieldProps {
 }
 
 export function Field({ field, value, error, onChange }: FieldProps) {
+  const { t, locale } = useI18n();
+  const label = localized(field.label, field.labels, locale) ?? field.label;
+  const help = localized(field.help, field.helps, locale);
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>
-        {field.label}
-        {field.required ? <Text style={styles.required}> Required</Text> : null}
+        {label}
+        {field.required ? <Text style={styles.required}> {t('form.required')}</Text> : null}
       </Text>
-      {field.help ? <Text style={styles.help}>{field.help}</Text> : null}
+      {help ? <Text style={styles.help}>{help}</Text> : null}
 
       <Control field={field} value={value} error={error} onChange={onChange} />
 
@@ -37,7 +43,10 @@ export function Field({ field, value, error, onChange }: FieldProps) {
 }
 
 function Control({ field, value, error, onChange }: FieldProps) {
+  const { t, locale } = useI18n();
   const invalid = Boolean(error);
+  const label = localized(field.label, field.labels, locale) ?? field.label;
+  const placeholder = localized(field.placeholder, field.placeholders, locale);
 
   switch (field.type) {
     case 'text':
@@ -51,11 +60,11 @@ function Control({ field, value, error, onChange }: FieldProps) {
           ]}
           value={(value as string) ?? ''}
           onChangeText={onChange}
-          placeholder={field.placeholder}
+          placeholder={placeholder}
           placeholderTextColor={color.inkFaint}
           multiline={field.type === 'longtext'}
           textAlignVertical={field.type === 'longtext' ? 'top' : 'center'}
-          accessibilityLabel={field.label}
+          accessibilityLabel={label}
         />
       );
 
@@ -65,11 +74,11 @@ function Control({ field, value, error, onChange }: FieldProps) {
           <TextInput
             style={[styles.input, styles.numberInput, invalid && styles.inputInvalid]}
             value={value === undefined || value === null ? '' : String(value)}
-            onChangeText={(t) => onChange(t === '' ? undefined : t)}
+            onChangeText={(text) => onChange(text === '' ? undefined : text)}
             keyboardType="numbers-and-punctuation"
-            placeholder={field.placeholder}
+            placeholder={placeholder}
             placeholderTextColor={color.inkFaint}
-            accessibilityLabel={field.label}
+            accessibilityLabel={label}
           />
           {field.unit ? <Text style={styles.unit}>{field.unit}</Text> : null}
         </View>
@@ -82,9 +91,9 @@ function Control({ field, value, error, onChange }: FieldProps) {
           onPress={() => onChange(!value)}
           accessibilityRole="switch"
           accessibilityState={{ checked: Boolean(value) }}
-          accessibilityLabel={field.label}
+          accessibilityLabel={label}
         >
-          <Text style={styles.switchText}>{value ? 'Yes' : 'No'}</Text>
+          <Text style={styles.switchText}>{value ? t('common.yes') : t('common.no')}</Text>
           <Switch
             value={Boolean(value)}
             onValueChange={onChange}
@@ -106,7 +115,9 @@ function Control({ field, value, error, onChange }: FieldProps) {
                 accessibilityRole="radio"
                 accessibilityState={{ selected: on }}
               >
-                <Text style={[styles.optionText, on && styles.optionTextOn]}>{opt.label}</Text>
+                <Text style={[styles.optionText, on && styles.optionTextOn]}>
+                  {localized(opt.label, opt.labels, locale)}
+                </Text>
               </Pressable>
             );
           })}
@@ -129,7 +140,9 @@ function Control({ field, value, error, onChange }: FieldProps) {
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
               >
-                <Text style={[styles.optionText, on && styles.optionTextOn]}>{opt.label}</Text>
+                <Text style={[styles.optionText, on && styles.optionTextOn]}>
+                  {localized(opt.label, opt.labels, locale)}
+                </Text>
               </Pressable>
             );
           })}
@@ -148,7 +161,7 @@ function Control({ field, value, error, onChange }: FieldProps) {
           placeholder="YYYY-MM-DD"
           placeholderTextColor={color.inkFaint}
           keyboardType="numbers-and-punctuation"
-          accessibilityLabel={field.label}
+          accessibilityLabel={label}
         />
       );
 
@@ -161,29 +174,33 @@ function Control({ field, value, error, onChange }: FieldProps) {
           style={[styles.input, invalid && styles.inputInvalid]}
           value={(value as string) ?? ''}
           onChangeText={onChange}
-          placeholder="Type the tag number"
+          placeholder={t('form.typeTag')}
           placeholderTextColor={color.inkFaint}
           autoCapitalize="characters"
-          accessibilityLabel={field.label}
+          accessibilityLabel={label}
         />
       );
 
     case 'signature':
       return (
-        <Pressable
-          style={styles.stub}
-          onPress={() => onChange(value ? undefined : `signed:${Date.now()}`)}
-        >
-          <Text style={styles.stubText}>{value ? 'Signed. Tap to clear.' : 'Tap to sign'}</Text>
-        </Pressable>
+        <SignaturePad
+          label={label}
+          value={value}
+          onChange={onChange}
+          signHereText={t('sig.signHere')}
+          clearText={t('sig.clear')}
+          doneText={t('sig.done')}
+          cancelText={t('sig.cancel')}
+        />
       );
 
     default:
-      return <Text style={styles.help}>Unsupported field type: {field.type}</Text>;
+      return <Text style={styles.help}>{t('form.unsupported', { type: field.type })}</Text>;
   }
 }
 
 function PhotoField({ field, value, onChange }: Omit<FieldProps, 'error'>) {
+  const { t } = useI18n();
   const uris = Array.isArray(value) ? (value as string[]) : [];
   const max = field.maxPhotos ?? 6;
 
@@ -211,7 +228,7 @@ function PhotoField({ field, value, onChange }: Omit<FieldProps, 'error'>) {
               style={styles.thumbWrap}
             >
               <Image source={{ uri }} style={styles.thumb} />
-              <Text style={styles.thumbRemove}>Remove</Text>
+              <Text style={styles.thumbRemove}>{t('form.remove')}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -220,7 +237,9 @@ function PhotoField({ field, value, onChange }: Omit<FieldProps, 'error'>) {
       {uris.length < max ? (
         <Pressable style={styles.photoButton} onPress={capture}>
           <Text style={styles.photoButtonText}>
-            Take photo{uris.length > 0 ? ` (${uris.length} of ${max})` : ''}
+            {uris.length > 0
+              ? t('form.photoCount', { n: uris.length, max })
+              : t('form.takePhoto')}
           </Text>
         </Pressable>
       ) : null}
@@ -295,15 +314,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   photoButtonText: { ...type.label, color: color.ink },
-
-  stub: {
-    minHeight: TOUCH * 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: color.inkFaint,
-    borderRadius: radius.md,
-  },
-  stubText: { ...type.body, color: color.inkMuted },
 });
