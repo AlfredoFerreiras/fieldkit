@@ -226,15 +226,14 @@ export async function drain(db: SQLite.SQLiteDatabase): Promise<{ sent: number; 
 }
 
 /** Keep the local copy, overwrite the server. */
-export async function resolveKeepLocal(
-  db: SQLite.SQLiteDatabase,
-  recordId: string,
-): Promise<void> {
+export async function resolveKeepLocal(db: SQLite.SQLiteDatabase, recordId: string): Promise<void> {
   await db.withTransactionAsync(async () => {
-    const row = await db.getFirstAsync<{ data: string; base_version: number | null; schema_id: string; schema_version: number }>(
-      'SELECT data, base_version, schema_id, schema_version FROM records WHERE id = ?',
-      recordId,
-    );
+    const row = await db.getFirstAsync<{
+      data: string;
+      base_version: number | null;
+      schema_id: string;
+      schema_version: number;
+    }>('SELECT data, base_version, schema_id, schema_version FROM records WHERE id = ?', recordId);
     if (!row) return;
 
     await db.runAsync(

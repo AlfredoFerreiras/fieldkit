@@ -124,9 +124,7 @@ function Control({ field, value, error, onChange }: FieldProps) {
                 key={opt.value}
                 style={[styles.option, on && styles.optionOn]}
                 onPress={() =>
-                  onChange(
-                    on ? selected.filter((v) => v !== opt.value) : [...selected, opt.value],
-                  )
+                  onChange(on ? selected.filter((v) => v !== opt.value) : [...selected, opt.value])
                 }
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
@@ -176,9 +174,7 @@ function Control({ field, value, error, onChange }: FieldProps) {
           style={styles.stub}
           onPress={() => onChange(value ? undefined : `signed:${Date.now()}`)}
         >
-          <Text style={styles.stubText}>
-            {value ? 'Signed. Tap to clear.' : 'Tap to sign'}
-          </Text>
+          <Text style={styles.stubText}>{value ? 'Signed. Tap to clear.' : 'Tap to sign'}</Text>
         </Pressable>
       );
 

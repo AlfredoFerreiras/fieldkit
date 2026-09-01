@@ -5,7 +5,15 @@ import { useDb } from './_layout';
 import { createDraft, listRecords, type FieldRecord } from '../src/db/records';
 import type { FormSchema } from '../src/schema/types';
 import hvac from '../src/schema/examples/hvac-inspection.json';
-import { color, radius, space, statusColor, statusLabel, TOUCH, type } from '../src/components/theme';
+import {
+  color,
+  radius,
+  space,
+  statusColor,
+  statusLabel,
+  TOUCH,
+  type,
+} from '../src/components/theme';
 
 // In production this comes from the server and lands in the `schemas` table.
 // Bundled here so the app is runnable on first launch with no backend.

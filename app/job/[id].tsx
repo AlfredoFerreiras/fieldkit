@@ -103,17 +103,15 @@ function ConflictScreen({
   onKeepServer: () => void;
 }) {
   const differing = Object.keys({ ...record.data, ...(record.conflictData ?? {}) }).filter(
-    (key) =>
-      JSON.stringify(record.data[key]) !==
-      JSON.stringify((record.conflictData ?? {})[key]),
+    (key) => JSON.stringify(record.data[key]) !== JSON.stringify((record.conflictData ?? {})[key]),
   );
 
   return (
     <View style={styles.conflictWrap}>
       <Text style={styles.title}>Someone else changed this inspection</Text>
       <Text style={styles.body}>
-        Your phone and the office have different answers. Pick which version to keep. Nothing
-        is discarded until you choose.
+        Your phone and the office have different answers. Pick which version to keep. Nothing is
+        discarded until you choose.
       </Text>
 
       <View style={styles.diffList}>

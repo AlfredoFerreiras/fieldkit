@@ -154,10 +154,7 @@ export async function getRecord(
   return row ? hydrate(row) : null;
 }
 
-export async function listRecords(
-  db: SQLite.SQLiteDatabase,
-  limit = 100,
-): Promise<FieldRecord[]> {
+export async function listRecords(db: SQLite.SQLiteDatabase, limit = 100): Promise<FieldRecord[]> {
   const rows = await db.getAllAsync<RecordRow>(
     `SELECT * FROM records
       ORDER BY CASE status
@@ -189,10 +186,7 @@ export async function countByStatus(
   return out;
 }
 
-export async function deleteRecord(
-  db: SQLite.SQLiteDatabase,
-  recordId: string,
-): Promise<void> {
+export async function deleteRecord(db: SQLite.SQLiteDatabase, recordId: string): Promise<void> {
   await db.withTransactionAsync(async () => {
     const row = await db.getFirstAsync<{ status: RecordStatus; base_version: number | null }>(
       'SELECT status, base_version FROM records WHERE id = ?',

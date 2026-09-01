@@ -107,10 +107,7 @@ export async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   }
 }
 
-export async function getMeta(
-  db: SQLite.SQLiteDatabase,
-  key: string,
-): Promise<string | null> {
+export async function getMeta(db: SQLite.SQLiteDatabase, key: string): Promise<string | null> {
   const row = await db.getFirstAsync<{ value: string | null }>(
     'SELECT value FROM meta WHERE key = ?',
     key,
