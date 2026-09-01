@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDb } from '../_layout';
 import { getRecord, saveDraft, submit, type FieldRecord } from '../../src/db/records';
 import { resolveKeepLocal, resolveKeepServer } from '../../src/sync/engine';
 import { FormRenderer } from '../../src/components/FormRenderer';
 import type { FormSchema, FormValues } from '../../src/schema/types';
-import hvac from '../../src/schema/examples/hvac-inspection.json';
+import fireRestoration from '../../src/schema/examples/fire-restoration.json';
 import { color, radius, space, TOUCH, type } from '../../src/components/theme';
 
-const SCHEMA = hvac as FormSchema;
+const SCHEMA = fireRestoration as FormSchema;
 
 export default function JobScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,7 +36,7 @@ export default function JobScreen() {
   if (!record) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>This inspection is no longer on the phone.</Text>
+        <Text style={styles.title}>This job report is no longer on the phone.</Text>
         <Pressable style={styles.secondary} onPress={() => router.back()}>
           <Text style={styles.secondaryText}>Back to the list</Text>
         </Pressable>
@@ -49,6 +49,10 @@ export default function JobScreen() {
     await refresh();
     void syncNow();
     router.back();
+    Alert.alert(
+      'Report submitted',
+      'It is saved on this phone and sends itself to the office as soon as you have signal.',
+    );
   }
 
   if (record.status === 'conflict') {
@@ -85,7 +89,7 @@ export default function JobScreen() {
       <FormRenderer
         schema={SCHEMA}
         initialValues={record.data}
-        submitLabel="Submit inspection"
+        submitLabel="Submit job report"
         onAutosave={(values) => void saveDraft(db, record.id, values)}
         onSubmit={handleSubmit}
       />
@@ -108,7 +112,7 @@ function ConflictScreen({
 
   return (
     <View style={styles.conflictWrap}>
-      <Text style={styles.title}>Someone else changed this inspection</Text>
+      <Text style={styles.title}>Someone else changed this job report</Text>
       <Text style={styles.body}>
         Your phone and the office have different answers. Pick which version to keep. Nothing is
         discarded until you choose.
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
   primary: {
     minHeight: TOUCH,
     borderRadius: radius.md,
-    backgroundColor: color.ink,
+    backgroundColor: color.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },

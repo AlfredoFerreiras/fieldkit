@@ -3,12 +3,14 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useDb } from './_layout';
 import { createDraft, listRecords, type FieldRecord } from '../src/db/records';
-import type { FormSchema } from '../src/schema/types';
-import hvac from '../src/schema/examples/hvac-inspection.json';
+import { summaryFor, type FormSchema } from '../src/schema/types';
+import fireRestoration from '../src/schema/examples/fire-restoration.json';
 import {
   color,
   radius,
+  shadow,
   space,
+  statusBg,
   statusColor,
   statusLabel,
   TOUCH,
@@ -17,7 +19,7 @@ import {
 
 // In production this comes from the server and lands in the `schemas` table.
 // Bundled here so the app is runnable on first launch with no backend.
-const SCHEMA = hvac as FormSchema;
+const SCHEMA = fireRestoration as FormSchema;
 
 export default function JobList() {
   const { db, pending, syncing, syncNow } = useDb();
@@ -38,7 +40,7 @@ export default function JobList() {
 
   async function startNew() {
     const record = await createDraft(db, SCHEMA, {
-      inspected_on: new Date().toISOString().slice(0, 10),
+      visit_date: new Date().toISOString().slice(0, 10),
     });
     router.push(`/job/${record.id}`);
   }
@@ -53,30 +55,38 @@ export default function JobList() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No inspections yet</Text>
+            <Text style={styles.emptyTitle}>No job reports yet</Text>
             <Text style={styles.emptyBody}>
               Start one now. It saves to this phone as you go, so you can finish it with no signal.
             </Text>
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => router.push(`/job/${item.id}`)}>
-            <View style={styles.rowMain}>
-              <Text style={styles.rowTitle} numberOfLines={1}>
-                {summarize(item)}
+          <Pressable style={styles.card} onPress={() => router.push(`/job/${item.id}`)}>
+            <View style={styles.cardMain}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {summaryFor(SCHEMA, item.data)}
               </Text>
-              <Text style={styles.rowMeta}>{relativeTime(item.updatedAt)}</Text>
+              <Text style={styles.cardMeta}>
+                {jobNumber(item)}
+                {relativeTime(item.updatedAt)}
+              </Text>
             </View>
-            <View style={[styles.pip, { backgroundColor: statusColor[item.status] }]} />
-            <Text style={[styles.rowStatus, { color: statusColor[item.status] }]}>
-              {statusLabel[item.status]}
-            </Text>
+            <View style={[styles.pill, { backgroundColor: statusBg[item.status] }]}>
+              <Text style={[styles.pillText, { color: statusColor[item.status] }]}>
+                {statusLabel[item.status]}
+              </Text>
+            </View>
           </Pressable>
         )}
       />
 
-      <Pressable style={styles.fab} onPress={startNew} accessibilityRole="button">
-        <Text style={styles.fabText}>Start inspection</Text>
+      <Pressable
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        onPress={startNew}
+        accessibilityRole="button"
+      >
+        <Text style={styles.fabText}>Start job report</Text>
       </Pressable>
     </View>
   );
@@ -93,14 +103,14 @@ function SyncBanner({
 }) {
   if (syncing) {
     return (
-      <View style={[styles.banner, { backgroundColor: color.canvas }]}>
+      <View style={styles.banner}>
         <Text style={styles.bannerText}>Sending…</Text>
       </View>
     );
   }
   if (pending === 0) {
     return (
-      <View style={[styles.banner, { backgroundColor: color.canvas }]}>
+      <View style={styles.banner}>
         <Text style={[styles.bannerText, { color: color.synced }]}>
           Everything is with the office
         </Text>
@@ -116,12 +126,9 @@ function SyncBanner({
   );
 }
 
-function summarize(record: FieldRecord): string {
-  const site = record.data.site_name as string | undefined;
-  const unit = record.data.unit_id as string | undefined;
-  if (site && unit) return `${site} · Unit ${unit}`;
-  if (site) return site;
-  return 'Untitled inspection';
+function jobNumber(record: FieldRecord): string {
+  const jobNo = record.data.job_number;
+  return typeof jobNo === 'string' && jobNo !== '' ? `#${jobNo} · ` : '';
 }
 
 function relativeTime(ts: number): string {
@@ -141,29 +148,38 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     borderBottomWidth: 1,
     borderBottomColor: color.line,
+    backgroundColor: color.canvas,
   },
   bannerPending: { backgroundColor: color.queued, borderBottomColor: color.queued },
   bannerText: { ...type.meta, fontSize: 15, color: color.inkMuted },
 
-  list: { padding: space.lg, gap: space.sm, paddingBottom: 120 },
+  list: { padding: space.lg, gap: space.md, paddingBottom: 120 },
 
-  row: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: TOUCH + 12,
+    minHeight: TOUCH + 16,
     backgroundColor: color.surface,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.line,
     paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    gap: space.sm,
+    paddingVertical: space.lg,
+    gap: space.md,
+    ...shadow.card,
   },
-  rowMain: { flex: 1, gap: 2 },
-  rowTitle: { ...type.label, color: color.ink },
-  rowMeta: { ...type.meta, color: color.inkFaint },
-  pip: { width: 8, height: 8, borderRadius: 4 },
-  rowStatus: { ...type.meta },
+  cardMain: { flex: 1, gap: 4 },
+  cardTitle: { ...type.label, color: color.ink },
+  cardMeta: { ...type.meta, color: color.inkFaint },
 
-  empty: { padding: space.xl, gap: space.sm, alignItems: 'center' },
+  pill: {
+    borderRadius: radius.pill,
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+  },
+  pillText: { ...type.meta },
+
+  empty: { padding: space.xl, gap: space.sm, alignItems: 'center', marginTop: space.xxl },
   emptyTitle: { ...type.label, fontSize: 20, color: color.ink },
   emptyBody: { ...type.body, color: color.inkMuted, textAlign: 'center' },
 
@@ -174,9 +190,11 @@ const styles = StyleSheet.create({
     bottom: space.xl,
     minHeight: TOUCH + 4,
     borderRadius: radius.md,
-    backgroundColor: color.ink,
+    backgroundColor: color.brand,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.raised,
   },
+  fabPressed: { backgroundColor: color.brandPressed },
   fabText: { ...type.label, fontSize: 19, color: color.surface },
 });

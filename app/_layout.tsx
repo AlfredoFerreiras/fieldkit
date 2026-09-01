@@ -110,8 +110,8 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: color.canvas },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Inspections' }} />
-        <Stack.Screen name="job/[id]" options={{ title: 'Inspection' }} />
+        <Stack.Screen name="index" options={{ title: 'Jobs' }} />
+        <Stack.Screen name="job/[id]" options={{ title: 'Job report' }} />
       </Stack>
     </DbContext.Provider>
   );
