@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Fieldkit",
+    "slug": "fieldkit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "fieldkit",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Fieldkit uses the camera to attach photos to inspections."
+        }
+      ]
+    ],
+    "ios": {
+      "bundleIdentifier": "com.fieldkit.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.fieldkit.app"
+    }
+  }
+}
