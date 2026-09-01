@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useDb } from '../_layout';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useDb } from '../../src/db/context';
+import { useI18n } from '../../src/i18n';
 import { getRecord, saveDraft, submit, type FieldRecord } from '../../src/db/records';
 import { resolveKeepLocal, resolveKeepServer } from '../../src/sync/engine';
 import { FormRenderer } from '../../src/components/FormRenderer';
-import type { FormSchema, FormValues } from '../../src/schema/types';
-import fireRestoration from '../../src/schema/examples/fire-restoration.json';
+import { JOB_SCHEMA } from '../../src/schema/bundled';
+import type { FormValues } from '../../src/schema/types';
 import { color, radius, space, TOUCH, type } from '../../src/components/theme';
-
-const SCHEMA = fireRestoration as FormSchema;
 
 export default function JobScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { db, syncNow, refresh } = useDb();
+  const { t } = useI18n();
   const router = useRouter();
   const [record, setRecord] = useState<FieldRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,9 +25,12 @@ export default function JobScreen() {
     });
   }, [db, id]);
 
+  const title = t('tabs.jobs');
+
   if (loading) {
     return (
       <View style={styles.center}>
+        <Stack.Screen options={{ title }} />
         <ActivityIndicator />
       </View>
     );
@@ -36,23 +39,21 @@ export default function JobScreen() {
   if (!record) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>This job report is no longer on the phone.</Text>
+        <Stack.Screen options={{ title }} />
+        <Text style={styles.title}>{t('job.gone')}</Text>
         <Pressable style={styles.secondary} onPress={() => router.back()}>
-          <Text style={styles.secondaryText}>Back to the list</Text>
+          <Text style={styles.secondaryText}>{t('job.back')}</Text>
         </Pressable>
       </View>
     );
   }
 
   async function handleSubmit(values: FormValues) {
-    await submit(db, SCHEMA, record!.id, values);
+    await submit(db, JOB_SCHEMA, record!.id, values);
     await refresh();
     void syncNow();
     router.back();
-    Alert.alert(
-      'Report submitted',
-      'It is saved on this phone and sends itself to the office as soon as you have signal.',
-    );
+    Alert.alert(t('job.submittedTitle'), t('job.submittedBody'));
   }
 
   if (record.status === 'conflict') {
@@ -78,18 +79,17 @@ export default function JobScreen() {
 
   return (
     <View style={styles.flex}>
+      <Stack.Screen options={{ title }} />
       {readOnly ? (
         <View style={styles.lockBanner}>
-          <Text style={styles.lockText}>
-            Submitted. Changes now would not reach the office, so this is read only.
-          </Text>
+          <Text style={styles.lockText}>{t('job.readOnly')}</Text>
         </View>
       ) : null}
 
       <FormRenderer
-        schema={SCHEMA}
+        schema={JOB_SCHEMA}
         initialValues={record.data}
-        submitLabel="Submit job report"
+        submitLabel={t('job.submit')}
         onAutosave={(values) => void saveDraft(db, record.id, values)}
         onSubmit={handleSubmit}
       />
@@ -106,45 +106,46 @@ function ConflictScreen({
   onKeepLocal: () => void;
   onKeepServer: () => void;
 }) {
+  const { t } = useI18n();
   const differing = Object.keys({ ...record.data, ...(record.conflictData ?? {}) }).filter(
     (key) => JSON.stringify(record.data[key]) !== JSON.stringify((record.conflictData ?? {})[key]),
   );
 
+  function render(value: unknown): string {
+    if (value === undefined || value === null || value === '') return t('conflict.blank');
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no');
+    return String(value);
+  }
+
   return (
     <View style={styles.conflictWrap}>
-      <Text style={styles.title}>Someone else changed this job report</Text>
-      <Text style={styles.body}>
-        Your phone and the office have different answers. Pick which version to keep. Nothing is
-        discarded until you choose.
-      </Text>
+      <Stack.Screen options={{ title: t('tabs.jobs') }} />
+      <Text style={styles.title}>{t('conflict.title')}</Text>
+      <Text style={styles.body}>{t('conflict.body')}</Text>
 
       <View style={styles.diffList}>
         {differing.map((key) => (
           <View key={key} style={styles.diffRow}>
             <Text style={styles.diffField}>{key}</Text>
-            <Text style={styles.diffMine}>Yours: {render(record.data[key])}</Text>
+            <Text style={styles.diffMine}>
+              {t('conflict.yours', { value: render(record.data[key]) })}
+            </Text>
             <Text style={styles.diffTheirs}>
-              Office: {render((record.conflictData ?? {})[key])}
+              {t('conflict.office', { value: render((record.conflictData ?? {})[key]) })}
             </Text>
           </View>
         ))}
       </View>
 
       <Pressable style={styles.primary} onPress={onKeepLocal}>
-        <Text style={styles.primaryText}>Keep what I entered</Text>
+        <Text style={styles.primaryText}>{t('conflict.keepMine')}</Text>
       </Pressable>
       <Pressable style={styles.secondary} onPress={onKeepServer}>
-        <Text style={styles.secondaryText}>Use the office version</Text>
+        <Text style={styles.secondaryText}>{t('conflict.useOffice')}</Text>
       </Pressable>
     </View>
   );
-}
-
-function render(value: unknown): string {
-  if (value === undefined || value === null || value === '') return 'blank';
-  if (Array.isArray(value)) return value.join(', ');
-  if (typeof value === 'boolean') return value ? 'yes' : 'no';
-  return String(value);
 }
 
 const styles = StyleSheet.create({

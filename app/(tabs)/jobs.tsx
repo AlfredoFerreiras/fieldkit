@@ -1,35 +1,29 @@
 import React, { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useDb } from './_layout';
-import { createDraft, listRecords, type FieldRecord } from '../src/db/records';
-import { summaryFor, type FormSchema } from '../src/schema/types';
-import fireRestoration from '../src/schema/examples/fire-restoration.json';
-import {
-  color,
-  radius,
-  shadow,
-  space,
-  statusBg,
-  statusColor,
-  statusLabel,
-  TOUCH,
-  type,
-} from '../src/components/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDb } from '../../src/db/context';
+import { useAuth } from '../../src/auth/session';
+import { useI18n } from '../../src/i18n';
+import { relativeTime } from '../../src/i18n/relativeTime';
+import { createDraft, listRecords, type FieldRecord } from '../../src/db/records';
+import { JOB_SCHEMA } from '../../src/schema/bundled';
+import { summaryFor } from '../../src/schema/types';
+import { StatusPill } from '../../src/components/StatusPill';
+import { color, radius, shadow, space, TOUCH, type } from '../../src/components/theme';
 
-// In production this comes from the server and lands in the `schemas` table.
-// Bundled here so the app is runnable on first launch with no backend.
-const SCHEMA = fireRestoration as FormSchema;
-
-export default function JobList() {
+export default function Jobs() {
   const { db, pending, syncing, syncNow } = useDb();
+  const { user } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [records, setRecords] = useState<FieldRecord[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      void listRecords(db).then((rows) => {
+      void listRecords(db, { schemaId: JOB_SCHEMA.id }).then((rows) => {
         if (active) setRecords(rows);
       });
       return () => {
@@ -39,9 +33,12 @@ export default function JobList() {
   );
 
   async function startNew() {
-    const record = await createDraft(db, SCHEMA, {
-      visit_date: new Date().toISOString().slice(0, 10),
-    });
+    const record = await createDraft(
+      db,
+      JOB_SCHEMA,
+      { visit_date: new Date().toISOString().slice(0, 10), crew_lead: user?.name ?? '' },
+      user?.id ?? null,
+    );
     router.push(`/job/${record.id}`);
   }
 
@@ -55,38 +52,36 @@ export default function JobList() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No job reports yet</Text>
-            <Text style={styles.emptyBody}>
-              Start one now. It saves to this phone as you go, so you can finish it with no signal.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('jobs.emptyTitle')}</Text>
+            <Text style={styles.emptyBody}>{t('jobs.emptyBody')}</Text>
           </View>
         }
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => router.push(`/job/${item.id}`)}>
             <View style={styles.cardMain}>
               <Text style={styles.cardTitle} numberOfLines={1}>
-                {summaryFor(SCHEMA, item.data)}
+                {summaryFor(JOB_SCHEMA, item.data)}
               </Text>
               <Text style={styles.cardMeta}>
                 {jobNumber(item)}
-                {relativeTime(item.updatedAt)}
+                {relativeTime(t, item.updatedAt)}
               </Text>
             </View>
-            <View style={[styles.pill, { backgroundColor: statusBg[item.status] }]}>
-              <Text style={[styles.pillText, { color: statusColor[item.status] }]}>
-                {statusLabel[item.status]}
-              </Text>
-            </View>
+            <StatusPill status={item.status} />
           </Pressable>
         )}
       />
 
       <Pressable
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: insets.bottom + space.lg },
+          pressed && styles.fabPressed,
+        ]}
         onPress={startNew}
         accessibilityRole="button"
       >
-        <Text style={styles.fabText}>Start job report</Text>
+        <Text style={styles.fabText}>{t('home.startJob')}</Text>
       </Pressable>
     </View>
   );
@@ -101,26 +96,26 @@ function SyncBanner({
   syncing: boolean;
   onPress: () => void;
 }) {
+  const { t } = useI18n();
+
   if (syncing) {
     return (
       <View style={styles.banner}>
-        <Text style={styles.bannerText}>Sending…</Text>
+        <Text style={styles.bannerText}>{t('sync.sending')}</Text>
       </View>
     );
   }
   if (pending === 0) {
     return (
       <View style={styles.banner}>
-        <Text style={[styles.bannerText, { color: color.synced }]}>
-          Everything is with the office
-        </Text>
+        <Text style={[styles.bannerText, { color: color.synced }]}>{t('sync.allSent')}</Text>
       </View>
     );
   }
   return (
     <Pressable style={[styles.banner, styles.bannerPending]} onPress={onPress}>
       <Text style={[styles.bannerText, { color: color.surface }]}>
-        {pending} waiting to send. Tap to try now.
+        {t('sync.pending', { n: pending })}
       </Text>
     </Pressable>
   );
@@ -129,15 +124,6 @@ function SyncBanner({
 function jobNumber(record: FieldRecord): string {
   const jobNo = record.data.job_number;
   return typeof jobNo === 'string' && jobNo !== '' ? `#${jobNo} · ` : '';
-}
-
-function relativeTime(ts: number): string {
-  const mins = Math.floor((Date.now() - ts) / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
 }
 
 const styles = StyleSheet.create({
@@ -153,7 +139,7 @@ const styles = StyleSheet.create({
   bannerPending: { backgroundColor: color.queued, borderBottomColor: color.queued },
   bannerText: { ...type.meta, fontSize: 15, color: color.inkMuted },
 
-  list: { padding: space.lg, gap: space.md, paddingBottom: 120 },
+  list: { padding: space.lg, gap: space.md, paddingBottom: 140 },
 
   card: {
     flexDirection: 'row',
@@ -172,13 +158,6 @@ const styles = StyleSheet.create({
   cardTitle: { ...type.label, color: color.ink },
   cardMeta: { ...type.meta, color: color.inkFaint },
 
-  pill: {
-    borderRadius: radius.pill,
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-  },
-  pillText: { ...type.meta },
-
   empty: { padding: space.xl, gap: space.sm, alignItems: 'center', marginTop: space.xxl },
   emptyTitle: { ...type.label, fontSize: 20, color: color.ink },
   emptyBody: { ...type.body, color: color.inkMuted, textAlign: 'center' },
@@ -187,7 +166,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: space.lg,
     right: space.lg,
-    bottom: space.xl,
     minHeight: TOUCH + 4,
     borderRadius: radius.md,
     backgroundColor: color.brand,
