@@ -1,0 +1,110 @@
+{
+  "id": "customer-issue",
+  "version": 1,
+  "title": "Customer issue",
+  "summaryTemplate": "{contact_name} · {property_address}",
+  "sections": [
+    {
+      "id": "contact",
+      "title": "How can we reach you?",
+      "titles": { "es": "¿Cómo le contactamos?" },
+      "fields": [
+        {
+          "id": "contact_name",
+          "type": "text",
+          "label": "Your name",
+          "labels": { "es": "Su nombre" },
+          "required": true
+        },
+        {
+          "id": "contact_phone",
+          "type": "text",
+          "label": "Phone number",
+          "labels": { "es": "Teléfono" },
+          "required": true
+        },
+        {
+          "id": "contact_email",
+          "type": "text",
+          "label": "Email",
+          "labels": { "es": "Correo electrónico" }
+        },
+        {
+          "id": "property_address",
+          "type": "text",
+          "label": "Property address",
+          "labels": { "es": "Dirección de la propiedad" },
+          "required": true
+        },
+        {
+          "id": "preferred_contact",
+          "type": "select",
+          "label": "How should we contact you?",
+          "labels": { "es": "¿Cómo prefiere que le contactemos?" },
+          "required": true,
+          "options": [
+            { "value": "call", "label": "Call me", "labels": { "es": "Llámenme" } },
+            { "value": "text", "label": "Text me", "labels": { "es": "Mensaje de texto" } },
+            { "value": "email", "label": "Email me", "labels": { "es": "Correo electrónico" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "problem",
+      "title": "What happened?",
+      "titles": { "es": "¿Qué pasó?" },
+      "fields": [
+        {
+          "id": "issue_type",
+          "type": "select",
+          "label": "Type of problem",
+          "labels": { "es": "Tipo de problema" },
+          "required": true,
+          "options": [
+            {
+              "value": "missing_item",
+              "label": "Something of mine is missing",
+              "labels": { "es": "Falta algo mío" }
+            },
+            {
+              "value": "damaged_item",
+              "label": "Something came back damaged",
+              "labels": { "es": "Algo regresó dañado" }
+            },
+            {
+              "value": "incomplete_work",
+              "label": "The work is not finished",
+              "labels": { "es": "El trabajo no está terminado" }
+            },
+            {
+              "value": "schedule",
+              "label": "Scheduling problem",
+              "labels": { "es": "Problema de horario" }
+            },
+            { "value": "billing", "label": "Billing question", "labels": { "es": "Duda de cobro" } },
+            { "value": "other", "label": "Something else", "labels": { "es": "Otra cosa" } }
+          ]
+        },
+        {
+          "id": "description",
+          "type": "longtext",
+          "label": "Tell us what happened",
+          "labels": { "es": "Cuéntenos qué pasó" },
+          "required": true,
+          "placeholder": "The more detail, the faster we can fix it.",
+          "placeholders": { "es": "Entre más detalle, más rápido lo arreglamos." }
+        },
+        {
+          "id": "photos",
+          "type": "photo",
+          "label": "Photos",
+          "labels": { "es": "Fotos" },
+          "maxPhotos": 6,
+          "help": "If you can photograph the problem, it helps a lot.",
+          "helps": { "es": "Si puede tomarle foto al problema, ayuda mucho." }
+        }
+      ]
+    }
+  ]
+}

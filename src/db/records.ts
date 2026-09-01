@@ -13,6 +13,7 @@ export interface FieldRecord {
   status: RecordStatus;
   baseVersion: number | null;
   conflictData: FormValues | null;
+  createdBy: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -25,6 +26,7 @@ interface RecordRow {
   status: RecordStatus;
   base_version: number | null;
   conflict_data: string | null;
+  created_by: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -38,6 +40,7 @@ function hydrate(row: RecordRow): FieldRecord {
     status: row.status,
     baseVersion: row.base_version,
     conflictData: row.conflict_data ? JSON.parse(row.conflict_data) : null,
+    createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -51,18 +54,20 @@ export async function createDraft(
   db: SQLite.SQLiteDatabase,
   schema: FormSchema,
   initial: FormValues = {},
+  createdBy: string | null = null,
 ): Promise<FieldRecord> {
   const id = newId();
   const now = Date.now();
 
   await db.runAsync(
     `INSERT INTO records
-       (id, schema_id, schema_version, data, status, base_version, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'draft', NULL, ?, ?)`,
+       (id, schema_id, schema_version, data, status, base_version, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'draft', NULL, ?, ?, ?)`,
     id,
     schema.id,
     schema.version,
     JSON.stringify(initial),
+    createdBy,
     now,
     now,
   );
@@ -75,6 +80,7 @@ export async function createDraft(
     status: 'draft',
     baseVersion: null,
     conflictData: null,
+    createdBy,
     createdAt: now,
     updatedAt: now,
   };
@@ -146,6 +152,54 @@ export async function submit(
   });
 }
 
+/**
+ * Merge a patch into a record's data and queue the result. Unlike submit()
+ * this does not prune to the schema: it exists for fields the office attaches
+ * after submission (issue verification, for now), which deliberately are not
+ * part of the customer-facing form.
+ */
+export async function amendSubmitted(
+  db: SQLite.SQLiteDatabase,
+  recordId: string,
+  patch: FormValues,
+): Promise<void> {
+  const now = Date.now();
+
+  await db.withTransactionAsync(async () => {
+    const row = await db.getFirstAsync<{
+      data: string;
+      base_version: number | null;
+      schema_id: string;
+      schema_version: number;
+    }>('SELECT data, base_version, schema_id, schema_version FROM records WHERE id = ?', recordId);
+    if (!row) return;
+
+    const merged = { ...(JSON.parse(row.data) as FormValues), ...patch };
+    const json = JSON.stringify(merged);
+
+    await db.runAsync(
+      `UPDATE records SET data = ?, status = 'queued', updated_at = ? WHERE id = ?`,
+      json,
+      now,
+      recordId,
+    );
+
+    await db.runAsync(
+      `INSERT INTO outbox (record_id, op, payload, base_version, created_at)
+       VALUES (?, 'upsert', ?, ?, ?)`,
+      recordId,
+      JSON.stringify({
+        id: recordId,
+        schemaId: row.schema_id,
+        schemaVersion: row.schema_version,
+        data: merged,
+      }),
+      row.base_version,
+      now,
+    );
+  });
+}
+
 export async function getRecord(
   db: SQLite.SQLiteDatabase,
   id: string,
@@ -154,9 +208,30 @@ export async function getRecord(
   return row ? hydrate(row) : null;
 }
 
-export async function listRecords(db: SQLite.SQLiteDatabase, limit = 100): Promise<FieldRecord[]> {
+export interface RecordFilter {
+  schemaId?: string;
+  createdBy?: string;
+}
+
+export async function listRecords(
+  db: SQLite.SQLiteDatabase,
+  filter: RecordFilter = {},
+  limit = 100,
+): Promise<FieldRecord[]> {
+  const where: string[] = [];
+  const args: (string | number)[] = [];
+  if (filter.schemaId) {
+    where.push('schema_id = ?');
+    args.push(filter.schemaId);
+  }
+  if (filter.createdBy) {
+    where.push('created_by = ?');
+    args.push(filter.createdBy);
+  }
+
   const rows = await db.getAllAsync<RecordRow>(
     `SELECT * FROM records
+      ${where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''}
       ORDER BY CASE status
                  WHEN 'conflict' THEN 0
                  WHEN 'draft'    THEN 1
@@ -165,6 +240,7 @@ export async function listRecords(db: SQLite.SQLiteDatabase, limit = 100): Promi
                END,
                updated_at DESC
       LIMIT ?`,
+    ...args,
     limit,
   );
   return rows.map(hydrate);

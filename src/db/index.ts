@@ -83,6 +83,27 @@ const MIGRATIONS: ((db: SQLite.SQLiteDatabase) => Promise<void>)[] = [
       );
     `);
   },
+  async (db) => {
+    await db.execAsync(`
+      -- Who created the record on this device. Drives "my reports" for
+      -- customers; server-side identity replaces the demo accounts later.
+      ALTER TABLE records ADD COLUMN created_by TEXT;
+
+      -- Team chat. Local-only until the server arrives; kept out of the
+      -- outbox on purpose so a future message transport is not entangled
+      -- with record delivery semantics.
+      CREATE TABLE messages (
+        id         TEXT PRIMARY KEY NOT NULL,
+        author_id  TEXT NOT NULL,
+        author     TEXT NOT NULL,
+        role       TEXT NOT NULL,
+        body       TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE INDEX idx_messages_created ON messages (created_at);
+    `);
+  },
 ];
 
 export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
