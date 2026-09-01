@@ -19,7 +19,7 @@ export default function JobScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getRecord(db, id).then((r) => {
+    void getRecord(db, id).then((r) => {
       setRecord(r);
       setLoading(false);
     });

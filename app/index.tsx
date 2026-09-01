@@ -19,7 +19,7 @@ export default function JobList() {
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      listRecords(db).then((rows) => {
+      void listRecords(db).then((rows) => {
         if (active) setRecords(rows);
       });
       return () => {

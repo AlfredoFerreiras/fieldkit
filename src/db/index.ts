@@ -13,7 +13,7 @@ export const DB_NAME = 'fieldkit.db';
  * migration that has shipped. Append a new one instead. Field devices go
  * months between updates and will jump several versions at once.
  */
-const MIGRATIONS: Array<(db: SQLite.SQLiteDatabase) => Promise<void>> = [
+const MIGRATIONS: ((db: SQLite.SQLiteDatabase) => Promise<void>)[] = [
   async (db) => {
     await db.execAsync(`
       CREATE TABLE schemas (

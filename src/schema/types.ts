@@ -27,7 +27,7 @@ export interface VisibilityRule {
   /** Field is visible when the referenced field equals this value. */
   equals?: string | number | boolean;
   /** Field is visible when the referenced field holds any of these values. */
-  oneOf?: Array<string | number | boolean>;
+  oneOf?: (string | number | boolean)[];
   /** Field is visible when the referenced field has any value at all. */
   isSet?: boolean;
 }
