@@ -147,6 +147,21 @@ export function validate(schema: FormSchema, values: FormValues): FieldError[] {
   return errors;
 }
 
+/** Render the schema's summary template against a record's values, e.g.
+ *  "{client_name} · {property_address}". Falls back to the schema title when
+ *  the referenced fields are still blank. */
+export function summaryFor(schema: FormSchema, values: FormValues): string {
+  if (!schema.summaryTemplate) return schema.title;
+  const rendered = schema.summaryTemplate
+    .replace(/\{(\w+)\}/g, (_, id: string) => {
+      const v = values[id];
+      return v === undefined || v === null || v === '' ? '' : String(v);
+    })
+    .replace(/^[\s·,-]+|[\s·,-]+$/g, '')
+    .trim();
+  return rendered || schema.title;
+}
+
 /** Strip values belonging to fields that are hidden, so payloads stay clean. */
 export function pruneHidden(schema: FormSchema, values: FormValues): FormValues {
   const out: FormValues = {};

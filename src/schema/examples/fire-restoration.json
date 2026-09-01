@@ -1,0 +1,211 @@
+{
+  "id": "fire-restoration-packout",
+  "version": 1,
+  "title": "Fire cleanup job report",
+  "summaryTemplate": "{client_name} · {property_address}",
+  "sections": [
+    {
+      "id": "job",
+      "title": "Job",
+      "fields": [
+        {
+          "id": "job_number",
+          "type": "text",
+          "label": "Job number",
+          "required": true,
+          "placeholder": "e.g. 2026-0142"
+        },
+        {
+          "id": "client_name",
+          "type": "text",
+          "label": "Client name",
+          "required": true
+        },
+        {
+          "id": "property_address",
+          "type": "text",
+          "label": "Property address",
+          "required": true
+        },
+        {
+          "id": "visit_date",
+          "type": "date",
+          "label": "Visit date",
+          "required": true
+        },
+        {
+          "id": "crew_lead",
+          "type": "text",
+          "label": "Crew lead",
+          "required": true
+        },
+        {
+          "id": "claim_number",
+          "type": "text",
+          "label": "Insurance claim number",
+          "help": "Leave blank if the client is paying directly."
+        }
+      ]
+    },
+    {
+      "id": "property",
+      "title": "Property condition",
+      "fields": [
+        {
+          "id": "areas_affected",
+          "type": "multiselect",
+          "label": "Areas affected",
+          "required": true,
+          "options": [
+            { "value": "kitchen", "label": "Kitchen" },
+            { "value": "living_room", "label": "Living room" },
+            { "value": "bedrooms", "label": "Bedrooms" },
+            { "value": "bathrooms", "label": "Bathrooms" },
+            { "value": "basement", "label": "Basement" },
+            { "value": "attic", "label": "Attic" },
+            { "value": "garage", "label": "Garage" },
+            { "value": "whole_property", "label": "Whole property" }
+          ]
+        },
+        {
+          "id": "smoke_level",
+          "type": "select",
+          "label": "Smoke damage",
+          "required": true,
+          "options": [
+            { "value": "light", "label": "Light — surface soot" },
+            { "value": "moderate", "label": "Moderate — soot and odor throughout" },
+            { "value": "heavy", "label": "Heavy — charring, heavy residue" },
+            { "value": "severe", "label": "Severe — structural burn damage" }
+          ]
+        },
+        {
+          "id": "water_damage",
+          "type": "boolean",
+          "label": "Water damage from firefighting"
+        },
+        {
+          "id": "power_on",
+          "type": "boolean",
+          "label": "Electricity is on"
+        },
+        {
+          "id": "hazards",
+          "type": "multiselect",
+          "label": "Hazards on site",
+          "options": [
+            { "value": "structural", "label": "Unstable structure" },
+            { "value": "electrical", "label": "Exposed wiring" },
+            { "value": "asbestos", "label": "Possible asbestos" },
+            { "value": "mold", "label": "Mold" },
+            { "value": "debris", "label": "Sharp debris" },
+            { "value": "air", "label": "Poor air quality" }
+          ]
+        },
+        {
+          "id": "hazard_notes",
+          "type": "longtext",
+          "label": "Hazard details",
+          "required": true,
+          "visibleWhen": { "field": "hazards", "isSet": true },
+          "placeholder": "Where it is and what the crew should do about it."
+        }
+      ]
+    },
+    {
+      "id": "packout",
+      "title": "Pack-out",
+      "description": "What the crew is taking out for cleaning and storage.",
+      "fields": [
+        {
+          "id": "boxes_packed",
+          "type": "number",
+          "label": "Boxes packed",
+          "min": 0,
+          "max": 2000
+        },
+        {
+          "id": "special_handling",
+          "type": "multiselect",
+          "label": "Items needing special handling",
+          "options": [
+            { "value": "electronics", "label": "Electronics" },
+            { "value": "artwork", "label": "Artwork" },
+            { "value": "documents", "label": "Documents" },
+            { "value": "valuables", "label": "Jewelry and valuables" },
+            { "value": "appliances", "label": "Appliances" },
+            { "value": "textiles", "label": "Clothing and textiles" }
+          ]
+        },
+        {
+          "id": "valuables_notes",
+          "type": "longtext",
+          "label": "Valuables details",
+          "required": true,
+          "visibleWhen": { "field": "special_handling", "oneOf": ["valuables"] },
+          "help": "List each valuable item. This protects the crew as much as the client."
+        },
+        {
+          "id": "unsalvageable",
+          "type": "longtext",
+          "label": "Unsalvageable items",
+          "placeholder": "Anything being disposed of, and why."
+        },
+        {
+          "id": "destination",
+          "type": "select",
+          "label": "Contents going to",
+          "options": [
+            { "value": "warehouse", "label": "Company warehouse" },
+            { "value": "pod", "label": "On-site storage pod" },
+            { "value": "mixed", "label": "Split — see notes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "title": "Evidence",
+      "fields": [
+        {
+          "id": "photos",
+          "type": "photo",
+          "label": "Photos",
+          "required": true,
+          "maxPhotos": 12,
+          "help": "Every affected room, plus anything listed as unsalvageable."
+        },
+        {
+          "id": "notes",
+          "type": "longtext",
+          "label": "Notes for the office",
+          "placeholder": "Anything the office needs before the next crew visit."
+        }
+      ]
+    },
+    {
+      "id": "signoff",
+      "title": "Sign-off",
+      "fields": [
+        {
+          "id": "client_present",
+          "type": "boolean",
+          "label": "Client was present"
+        },
+        {
+          "id": "client_signature",
+          "type": "signature",
+          "label": "Client signature",
+          "required": true,
+          "visibleWhen": { "field": "client_present", "equals": true }
+        },
+        {
+          "id": "lead_signature",
+          "type": "signature",
+          "label": "Crew lead signature",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
