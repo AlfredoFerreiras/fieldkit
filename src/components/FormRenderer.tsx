@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
     color: color.ink,
     marginBottom: space.md,
     paddingBottom: space.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: color.ink,
+    borderBottomWidth: 3,
+    borderBottomColor: color.brand,
   },
   sectionDesc: { ...type.help, color: color.inkMuted, marginBottom: space.lg },
 
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   submit: {
     minHeight: TOUCH + 4,
     borderRadius: radius.md,
-    backgroundColor: color.ink,
+    backgroundColor: color.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },

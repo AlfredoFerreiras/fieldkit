@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     paddingHorizontal: space.lg,
   },
-  optionOn: { borderColor: color.ink, borderWidth: 2.5, backgroundColor: color.canvas },
+  optionOn: { borderColor: color.brand, borderWidth: 2.5, backgroundColor: color.brandTint },
   optionText: { ...type.body, color: color.ink },
   optionTextOn: { fontWeight: '600' },
 
