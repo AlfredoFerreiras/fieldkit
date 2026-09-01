@@ -35,6 +35,8 @@ export interface VisibilityRule {
 export interface SelectOption {
   value: string;
   label: string;
+  /** Optional translations keyed by locale, e.g. { "es": "Cocina" }. */
+  labels?: Record<string, string>;
 }
 
 export interface FormField {
@@ -42,9 +44,13 @@ export interface FormField {
   id: string;
   type: FieldType;
   label: string;
+  /** Optional translations keyed by locale, e.g. { "es": "Fotos" }. */
+  labels?: Record<string, string>;
   help?: string;
+  helps?: Record<string, string>;
   required?: boolean;
   placeholder?: string;
+  placeholders?: Record<string, string>;
 
   /** select / multiselect */
   options?: SelectOption[];
@@ -63,8 +69,20 @@ export interface FormField {
 export interface FormSection {
   id: string;
   title: string;
+  titles?: Record<string, string>;
   description?: string;
+  descriptions?: Record<string, string>;
   fields: FormField[];
+}
+
+/** Schemas carry their own translations because the customer owns the form;
+ *  the app cannot know what "Areas affected" is in Spanish for every customer. */
+export function localized(
+  base: string | undefined,
+  translations: Record<string, string> | undefined,
+  locale: string,
+): string | undefined {
+  return translations?.[locale] ?? base;
 }
 
 export interface FormSchema {
@@ -107,12 +125,34 @@ export interface FieldError {
   message: string;
 }
 
+const validationText = {
+  en: {
+    required: (label: string) => `${label} is required`,
+    number: () => 'Enter a number',
+    min: (n: number) => `Must be at least ${n}`,
+    max: (n: number) => `Must be at most ${n}`,
+  },
+  es: {
+    required: (label: string) => `${label} es obligatorio`,
+    number: () => 'Escriba un número',
+    min: (n: number) => `Debe ser al menos ${n}`,
+    max: (n: number) => `Debe ser máximo ${n}`,
+  },
+} as const;
+
+export type SchemaLocale = keyof typeof validationText;
+
 /**
  * Validation runs against visible fields only. A hidden required field must
  * never block submission, otherwise conditional logic creates dead ends.
  */
-export function validate(schema: FormSchema, values: FormValues): FieldError[] {
+export function validate(
+  schema: FormSchema,
+  values: FormValues,
+  locale: SchemaLocale = 'en',
+): FieldError[] {
   const errors: FieldError[] = [];
+  const text = validationText[locale];
 
   for (const section of schema.sections) {
     for (const field of section.fields) {
@@ -126,7 +166,8 @@ export function validate(schema: FormSchema, values: FormValues): FieldError[] {
         (Array.isArray(value) && value.length === 0);
 
       if (field.required && empty) {
-        errors.push({ fieldId: field.id, message: `${field.label} is required` });
+        const label = localized(field.label, field.labels, locale) ?? field.label;
+        errors.push({ fieldId: field.id, message: text.required(label) });
         continue;
       }
       if (empty) continue;
@@ -134,11 +175,11 @@ export function validate(schema: FormSchema, values: FormValues): FieldError[] {
       if (field.type === 'number') {
         const n = Number(value);
         if (Number.isNaN(n)) {
-          errors.push({ fieldId: field.id, message: 'Enter a number' });
+          errors.push({ fieldId: field.id, message: text.number() });
         } else if (field.min !== undefined && n < field.min) {
-          errors.push({ fieldId: field.id, message: `Must be at least ${field.min}` });
+          errors.push({ fieldId: field.id, message: text.min(field.min) });
         } else if (field.max !== undefined && n > field.max) {
-          errors.push({ fieldId: field.id, message: `Must be at most ${field.max}` });
+          errors.push({ fieldId: field.id, message: text.max(field.max) });
         }
       }
     }
