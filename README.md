@@ -1,6 +1,6 @@
 # Fieldkit
 
-[![CI](https://github.com/alfredoferreiras/fieldkit/actions/workflows/ci.yml/badge.svg)](https://github.com/alfredoferreiras/fieldkit/actions/workflows/ci.yml)
+[![CI](https://github.com/AlfredoFerreiras/fieldkit/actions/workflows/ci.yml/badge.svg)](https://github.com/AlfredoFerreiras/fieldkit/actions/workflows/ci.yml)
 
 Offline-first field app for a fire damage restoration contractor. Technicians
 fill out job reports on site, often in a burned building with no signal. The
@@ -16,9 +16,12 @@ mock server, including the conflict path. The office server is the next piece.
 
 ## Screenshots
 
-<!-- Add phone screenshots to docs/screenshots and reference them here. -->
-
-_Screenshots coming. The offline demo below is the best way to see it work._
+<p>
+  <img src="docs/screenshots/login.jpeg" width="190" alt="Login screen with account picker and PIN pad" />
+  <img src="docs/screenshots/home.jpeg" width="190" alt="Supervisor home with this week's jobs and what needs attention" />
+  <img src="docs/screenshots/report.jpeg" width="190" alt="Fire cleanup job report form" />
+  <img src="docs/screenshots/chat.jpeg" width="190" alt="Team chat" />
+</p>
 
 ## What it does
 
@@ -48,7 +51,7 @@ _Screenshots coming. The offline demo below is the best way to see it work._
 You need Node 20 or newer and the Expo Go app on your phone (it runs Expo SDK 57, which this project targets).
 
 ```bash
-git clone https://github.com/alfredoferreiras/fieldkit.git
+git clone https://github.com/AlfredoFerreiras/fieldkit.git
 cd fieldkit
 npm install
 npx expo start
