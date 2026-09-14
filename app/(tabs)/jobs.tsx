@@ -10,10 +10,11 @@ import { createDraft, listRecords, type FieldRecord } from '../../src/db/records
 import { JOB_SCHEMA } from '../../src/schema/bundled';
 import { summaryFor } from '../../src/schema/types';
 import { StatusPill } from '../../src/components/StatusPill';
+import { SyncBanner } from '../../src/components/SyncBanner';
 import { color, radius, shadow, space, TOUCH, type } from '../../src/components/theme';
 
 export default function Jobs() {
-  const { db, pending, syncing, syncNow } = useDb();
+  const { db } = useDb();
   const { user } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function Jobs() {
 
   return (
     <View style={styles.flex}>
-      <SyncBanner pending={pending} syncing={syncing} onPress={syncNow} />
+      <SyncBanner />
 
       <FlatList
         data={records}
@@ -87,40 +88,6 @@ export default function Jobs() {
   );
 }
 
-function SyncBanner({
-  pending,
-  syncing,
-  onPress,
-}: {
-  pending: number;
-  syncing: boolean;
-  onPress: () => void;
-}) {
-  const { t } = useI18n();
-
-  if (syncing) {
-    return (
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>{t('sync.sending')}</Text>
-      </View>
-    );
-  }
-  if (pending === 0) {
-    return (
-      <View style={styles.banner}>
-        <Text style={[styles.bannerText, { color: color.synced }]}>{t('sync.allSent')}</Text>
-      </View>
-    );
-  }
-  return (
-    <Pressable style={[styles.banner, styles.bannerPending]} onPress={onPress}>
-      <Text style={[styles.bannerText, { color: color.surface }]}>
-        {t('sync.pending', { n: pending })}
-      </Text>
-    </Pressable>
-  );
-}
-
 function jobNumber(record: FieldRecord): string {
   const jobNo = record.data.job_number;
   return typeof jobNo === 'string' && jobNo !== '' ? `#${jobNo} · ` : '';
@@ -128,16 +95,6 @@ function jobNumber(record: FieldRecord): string {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: color.canvas },
-
-  banner: {
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: color.line,
-    backgroundColor: color.canvas,
-  },
-  bannerPending: { backgroundColor: color.queued, borderBottomColor: color.queued },
-  bannerText: { ...type.meta, fontSize: 15, color: color.inkMuted },
 
   list: { padding: space.lg, gap: space.md, paddingBottom: 140 },
 

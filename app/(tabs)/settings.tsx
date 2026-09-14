@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useDb } from '../../src/db/context';
 import { useAuth } from '../../src/auth/session';
 import { useI18n, type Locale } from '../../src/i18n';
@@ -9,6 +10,7 @@ export default function Settings() {
   const { pending } = useDb();
   const { user, signOut } = useAuth();
   const { t, locale, setLocale } = useI18n();
+  const router = useRouter();
 
   return (
     <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
@@ -25,6 +27,15 @@ export default function Settings() {
           <LangButton current={locale} value="es" label="Español" onSelect={setLocale} />
         </View>
       </View>
+
+      {user?.role === 'supervisor' ? (
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>{t('settings.team')}</Text>
+          <Pressable style={styles.manage} onPress={() => router.push('/users')}>
+            <Text style={styles.manageText}>{t('settings.manageUsers')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={styles.card}>
         <Text style={styles.cardValue}>
@@ -74,6 +85,17 @@ const styles = StyleSheet.create({
   cardLabel: { ...type.section, color: color.inkMuted, textTransform: 'uppercase' },
   cardValue: { ...type.label, fontSize: 20, color: color.ink },
   cardMeta: { ...type.meta, color: color.inkMuted },
+
+  manage: {
+    minHeight: TOUCH,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: color.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: space.sm,
+  },
+  manageText: { ...type.label, color: color.brand },
 
   langRow: { flexDirection: 'row', gap: space.md, marginTop: space.sm },
   lang: {

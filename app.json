@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "fieldkit",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "plugins": [
       "expo-router",
       "expo-sqlite",
@@ -15,14 +14,24 @@
         {
           "cameraPermission": "Fieldkit uses the camera to attach photos to inspections."
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-font"
     ],
     "ios": {
       "bundleIdentifier": "com.fieldkit.app",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.fieldkit.app"
-    }
+      "package": "com.fieldkit.app",
+      "permissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ec933b51-05e2-4837-a302-bd6c3d538e46"
+      }
+    },
+    "owner": "alfredoferreiras"
   }
 }

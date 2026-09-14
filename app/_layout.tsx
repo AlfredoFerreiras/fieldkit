@@ -5,7 +5,7 @@ import type * as SQLite from 'expo-sqlite';
 import { openDatabase } from '../src/db';
 import { DbProvider } from '../src/db/context';
 import { AuthProvider, useAuth } from '../src/auth/session';
-import { LocaleProvider } from '../src/i18n';
+import { LocaleProvider, useI18n } from '../src/i18n';
 import { color, space, type } from '../src/components/theme';
 
 export default function RootLayout() {
@@ -43,21 +43,34 @@ export default function RootLayout() {
       <LocaleProvider db={db}>
         <AuthProvider db={db}>
           <AuthGate>
-            <Stack
-              screenOptions={{
-                headerStyle: { backgroundColor: color.surface },
-                headerTitleStyle: { ...type.label },
-                headerTintColor: color.ink,
-                contentStyle: { backgroundColor: color.canvas },
-              }}
-            >
-              <Stack.Screen name="login" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
+            <RootStack />
           </AuthGate>
         </AuthProvider>
       </LocaleProvider>
     </DbProvider>
+  );
+}
+
+function RootStack() {
+  const { t } = useI18n();
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: color.surface },
+        headerTitleStyle: { ...type.label },
+        headerTintColor: color.ink,
+        contentStyle: { backgroundColor: color.canvas },
+        // Route group names like "(tabs)" must never surface as the iOS back
+        // label, so the (tabs) screen below carries a real title. Do not reach
+        // for headerBackButtonDisplayMode: 'minimal' here: react-native-screens
+        // 4.16 on iOS 26 hides the back button entirely in that mode, leaving
+        // pushed screens like /reports with no way back.
+      }}
+    >
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: t('tabs.home') }} />
+    </Stack>
   );
 }
 

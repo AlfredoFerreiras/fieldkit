@@ -15,12 +15,14 @@ import { useAuth } from '../../src/auth/session';
 import { useI18n } from '../../src/i18n';
 import { relativeTime } from '../../src/i18n/relativeTime';
 import { listMessages, sendMessage, type ChatMessage } from '../../src/db/messages';
+import { useBadges } from '../../src/notifications/badges';
 import { color, radius, shadow, space, TOUCH, type } from '../../src/components/theme';
 
 export default function Chat() {
   const { db } = useDb();
   const { user } = useAuth();
   const { t } = useI18n();
+  const { markChatRead } = useBadges();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
 
@@ -31,7 +33,10 @@ export default function Chat() {
   useFocusEffect(
     useCallback(() => {
       reload();
-    }, [reload]),
+      void markChatRead();
+      // Leaving the screen also counts as having read what was on it.
+      return () => void markChatRead();
+    }, [reload, markChatRead]),
   );
 
   async function handleSend() {

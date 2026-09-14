@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DEMO_ACCOUNTS, useAuth, type Account } from '../src/auth/session';
+import { useAuth, type Account } from '../src/auth/session';
 import { useI18n } from '../src/i18n';
+import { COMPANY } from '../src/config';
+import { AccountForm } from '../src/components/AccountForm';
 import { color, radius, shadow, space, TOUCH, type } from '../src/components/theme';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { accounts, signIn, addAccount } = useAuth();
   const { t, locale, setLocale } = useI18n();
   const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<'signIn' | 'create'>('signIn');
   const [selected, setSelected] = useState<Account | null>(null);
   const [pin, setPin] = useState('');
   const [failed, setFailed] = useState(false);
@@ -23,66 +35,107 @@ export default function Login() {
   }
 
   return (
-    <View style={[styles.flex, { paddingTop: insets.top + space.xxl }]}>
-      <Pressable
-        style={styles.langSwitch}
-        onPress={() => setLocale(locale === 'en' ? 'es' : 'en')}
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl }]}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.langText}>{locale === 'en' ? 'Español' : 'English'}</Text>
-      </Pressable>
+        <Pressable
+          style={styles.langSwitch}
+          onPress={() => setLocale(locale === 'en' ? 'es' : 'en')}
+        >
+          <Text style={styles.langText}>{locale === 'en' ? 'Español' : 'English'}</Text>
+        </Pressable>
 
-      <Text style={styles.brand}>Fieldkit</Text>
-      <Text style={styles.title}>{t('login.title')}</Text>
-      <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
+        <Text style={styles.brand}>{COMPANY.name}</Text>
 
-      <View style={styles.accounts}>
-        {DEMO_ACCOUNTS.map((account) => {
-          const on = selected?.id === account.id;
-          return (
-            <Pressable
-              key={account.id}
-              style={[styles.account, on && styles.accountOn]}
-              onPress={() => {
-                setSelected(account);
-                setFailed(false);
+        {mode === 'create' ? (
+          <>
+            <Text style={styles.title}>{t('login.createTitle')}</Text>
+            <Text style={styles.subtitle}>
+              {t('login.createSubtitle', { company: COMPANY.name })}
+            </Text>
+
+            <AccountForm
+              fixedRole="customer"
+              submitLabel={t('login.create')}
+              onSubmit={async (input) => {
+                const account = await addAccount(input);
+                await signIn(account.id, input.pin);
               }}
-            >
-              <Text style={[styles.accountName, on && styles.accountNameOn]}>{account.name}</Text>
-              <Text style={styles.accountRole}>{t(`role.${account.role}`)}</Text>
+            />
+
+            <Pressable style={styles.link} onPress={() => setMode('signIn')}>
+              <Text style={styles.linkText}>{t('login.back')}</Text>
             </Pressable>
-          );
-        })}
-      </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>{t('login.title')}</Text>
+            <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
 
-      {selected ? (
-        <View style={styles.pinRow}>
-          <TextInput
-            style={[styles.pinInput, failed && styles.pinInvalid]}
-            value={pin}
-            onChangeText={(next) => {
-              setPin(next);
-              setFailed(false);
-            }}
-            placeholder={t('login.pin')}
-            placeholderTextColor={color.inkFaint}
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={4}
-            accessibilityLabel={t('login.pin')}
-          />
-          <Pressable style={styles.signIn} onPress={handleSignIn}>
-            <Text style={styles.signInText}>{t('login.signIn')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
+            <View style={styles.accounts}>
+              {accounts.map((account) => {
+                const on = selected?.id === account.id;
+                return (
+                  <Pressable
+                    key={account.id}
+                    style={[styles.account, on && styles.accountOn]}
+                    onPress={() => {
+                      setSelected(account);
+                      setFailed(false);
+                    }}
+                  >
+                    <Text style={[styles.accountName, on && styles.accountNameOn]}>
+                      {account.name}
+                    </Text>
+                    <Text style={styles.accountRole}>{t(`role.${account.role}`)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-      {failed ? <Text style={styles.error}>{t('login.wrongPin')}</Text> : null}
-    </View>
+            {selected ? (
+              <View style={styles.pinRow}>
+                <TextInput
+                  style={[styles.pinInput, failed && styles.pinInvalid]}
+                  value={pin}
+                  onChangeText={(next) => {
+                    setPin(next);
+                    setFailed(false);
+                  }}
+                  placeholder={t('login.pin')}
+                  placeholderTextColor={color.inkFaint}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={4}
+                  accessibilityLabel={t('login.pin')}
+                />
+                <Pressable style={styles.signIn} onPress={handleSignIn}>
+                  <Text style={styles.signInText}>{t('login.signIn')}</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {failed ? <Text style={styles.error}>{t('login.wrongPin')}</Text> : null}
+
+            <Pressable style={styles.link} onPress={() => setMode('create')}>
+              <Text style={styles.linkText}>{t('login.newCustomer')}</Text>
+            </Pressable>
+          </>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: color.canvas, padding: space.xl, gap: space.md },
+  flex: { flex: 1, backgroundColor: color.canvas },
+  content: { padding: space.xl, gap: space.md, paddingBottom: space.xxl },
 
   langSwitch: { alignSelf: 'flex-end' },
   langText: { ...type.label, color: color.brand },
@@ -133,4 +186,7 @@ const styles = StyleSheet.create({
   signInText: { ...type.label, fontSize: 19, color: color.surface },
 
   error: { ...type.body, color: color.conflict },
+
+  link: { minHeight: TOUCH, alignItems: 'center', justifyContent: 'center', marginTop: space.md },
+  linkText: { ...type.label, fontSize: 16, color: color.brand },
 });

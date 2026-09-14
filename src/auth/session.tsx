@@ -1,69 +1,34 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type * as SQLite from 'expo-sqlite';
 import { getMeta, setMeta } from '../db';
+import {
+  createAccount,
+  getAccount,
+  listAccounts,
+  verifyPin,
+  type Account,
+  type NewAccount,
+} from './accounts';
+
+export type { Account, Role } from './accounts';
 
 /**
- * Demo identity, deliberately not security. These accounts exist so the app
- * can be exercised per role before the office server exists. Real
- * authentication (tokens in expo-secure-store, refresh, server-checked
- * credentials) replaces this module wholesale; nothing else in the app should
- * know the difference, which is why everything consumes the Account shape and
- * never the PIN.
+ * Device sign-in over the local accounts table. Screens consume the Account
+ * shape and never touch PINs; when the office server brings real
+ * authentication (tokens in expo-secure-store, server-checked credentials),
+ * this module is the only thing that changes.
  */
-
-export type Role = 'supervisor' | 'manager' | 'customer';
-
-export interface Account {
-  id: string;
-  name: string;
-  role: Role;
-  pin: string;
-  phone: string;
-  email: string;
-}
-
-export const DEMO_ACCOUNTS: Account[] = [
-  {
-    id: 'sup-1',
-    name: 'Alfredo',
-    role: 'supervisor',
-    pin: '1111',
-    phone: '+15550100',
-    email: 'supervisor@example.com',
-  },
-  {
-    id: 'mgr-1',
-    name: 'Maria',
-    role: 'manager',
-    pin: '2222',
-    phone: '+15550101',
-    email: 'maria@example.com',
-  },
-  {
-    id: 'mgr-2',
-    name: 'James',
-    role: 'manager',
-    pin: '3333',
-    phone: '+15550102',
-    email: 'james@example.com',
-  },
-  {
-    id: 'cust-1',
-    name: 'Ana Torres',
-    role: 'customer',
-    pin: '0000',
-    phone: '+15550103',
-    email: 'ana@example.com',
-  },
-];
 
 const SESSION_KEY = 'session_account_id';
 
 interface AuthValue {
   user: Account | null;
   ready: boolean;
+  accounts: Account[];
   signIn: (accountId: string, pin: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  addAccount: (input: NewAccount) => Promise<Account>;
+  reloadAccounts: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -83,17 +48,24 @@ export function AuthProvider({
 }) {
   const [user, setUser] = useState<Account | null>(null);
   const [ready, setReady] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
-  useEffect(() => {
-    void getMeta(db, SESSION_KEY).then((id) => {
-      setUser(DEMO_ACCOUNTS.find((a) => a.id === id) ?? null);
-      setReady(true);
-    });
+  const reloadAccounts = useCallback(async () => {
+    setAccounts(await listAccounts(db));
   }, [db]);
 
+  useEffect(() => {
+    void (async () => {
+      const id = await getMeta(db, SESSION_KEY);
+      setUser(id ? await getAccount(db, id) : null);
+      await reloadAccounts();
+      setReady(true);
+    })();
+  }, [db, reloadAccounts]);
+
   async function signIn(accountId: string, pin: string): Promise<boolean> {
-    const account = DEMO_ACCOUNTS.find((a) => a.id === accountId);
-    if (!account || account.pin !== pin) return false;
+    const account = await verifyPin(db, accountId, pin);
+    if (!account) return false;
     await setMeta(db, SESSION_KEY, account.id);
     setUser(account);
     return true;
@@ -104,7 +76,17 @@ export function AuthProvider({
     setUser(null);
   }
 
+  async function addAccount(input: NewAccount): Promise<Account> {
+    const account = await createAccount(db, input);
+    await reloadAccounts();
+    return account;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, ready, signIn, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider
+      value={{ user, ready, accounts, signIn, signOut, addAccount, reloadAccounts }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 }

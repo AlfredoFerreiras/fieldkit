@@ -21,7 +21,7 @@ import {
   type FieldRecord,
 } from '../../src/db/records';
 import { ISSUE_SCHEMA } from '../../src/schema/bundled';
-import { isVisible, localized, type FormValues } from '../../src/schema/types';
+import { isVisible, localized } from '../../src/schema/types';
 import { FormRenderer } from '../../src/components/FormRenderer';
 import { StatusPill } from '../../src/components/StatusPill';
 import { color, radius, shadow, space, TOUCH, type } from '../../src/components/theme';

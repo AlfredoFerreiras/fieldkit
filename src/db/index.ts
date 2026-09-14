@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { seedAccounts } from '../auth/accounts';
 
 /**
  * The device database is the source of truth for the device. The server is a
@@ -104,10 +105,29 @@ const MIGRATIONS: ((db: SQLite.SQLiteDatabase) => Promise<void>)[] = [
       CREATE INDEX idx_messages_created ON messages (created_at);
     `);
   },
+  async (db) => {
+    // Accounts move from a hardcoded list into the database, so users created
+    // on the device persist. PINs are stored salted and hashed, never plain.
+    await db.execAsync(`
+      CREATE TABLE accounts (
+        id         TEXT PRIMARY KEY NOT NULL,
+        name       TEXT NOT NULL,
+        role       TEXT NOT NULL,
+        pin_hash   TEXT NOT NULL,
+        pin_salt   TEXT NOT NULL,
+        phone      TEXT NOT NULL DEFAULT '',
+        email      TEXT NOT NULL DEFAULT '',
+        created_at INTEGER NOT NULL
+      );
+    `);
+    await seedAccounts(db);
+  },
 ];
 
 export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
-  const db = await SQLite.openDatabaseAsync(DB_NAME);
+  // enableChangeListener lets the badge provider react to writes from any
+  // screen without every screen having to announce them.
+  const db = await SQLite.openDatabaseAsync(DB_NAME, { enableChangeListener: true });
   await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   await migrate(db);
   return db;

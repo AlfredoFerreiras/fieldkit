@@ -1,6 +1,6 @@
 {
   "id": "fire-restoration-packout",
-  "version": 1,
+  "version": 2,
   "title": "Fire cleanup job report",
   "summaryTemplate": "{client_name} · {property_address}",
   "sections": [
@@ -159,6 +159,40 @@
             { "value": "warehouse", "label": "Company warehouse" },
             { "value": "pod", "label": "On-site storage pod" },
             { "value": "mixed", "label": "Split — see notes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "billing",
+      "title": "Billing",
+      "titles": { "es": "Facturación" },
+      "description": "Feeds the sales report. Leave blank if the office bills later.",
+      "descriptions": { "es": "Alimenta el reporte de ventas. Deje en blanco si la oficina factura después." },
+      "fields": [
+        {
+          "id": "job_value",
+          "type": "number",
+          "label": "Job value",
+          "labels": { "es": "Valor del trabajo" },
+          "min": 0,
+          "unit": "$",
+          "help": "Invoice or approved estimate total for this visit.",
+          "helps": { "es": "Total de la factura o del presupuesto aprobado de esta visita." }
+        },
+        {
+          "id": "payment_status",
+          "type": "select",
+          "label": "Payment",
+          "labels": { "es": "Pago" },
+          "options": [
+            {
+              "value": "pending",
+              "label": "Not billed yet",
+              "labels": { "es": "Aún sin facturar" }
+            },
+            { "value": "billed", "label": "Billed", "labels": { "es": "Facturado" } },
+            { "value": "paid", "label": "Paid", "labels": { "es": "Pagado" } }
           ]
         }
       ]

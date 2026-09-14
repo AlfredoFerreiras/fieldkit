@@ -25,6 +25,11 @@ import { pushBatch, type PushResult } from './api';
  *    copy is held alongside the local copy until a human picks. Automatic
  *    merging of an inspection report is how you end up certifying a unit
  *    nobody looked at.
+ *
+ * 5. One in flight mutation per record. An edit queued behind an unsynced
+ *    create carries a base version the server has not assigned yet, so the
+ *    two are sent in separate round trips and the version the server returns
+ *    for the first is stamped onto the rows still waiting behind it.
  */
 
 const BATCH_SIZE = 25;
@@ -74,13 +79,18 @@ async function claimBatch(db: SQLite.SQLiteDatabase): Promise<OutboxRow[]> {
   let claimed: OutboxRow[] = [];
 
   await db.withTransactionAsync(async () => {
+    // Only the earliest eligible row per record. If that row is already in
+    // flight, the rows behind it wait for its result and the version it brings.
     claimed = await db.getAllAsync<OutboxRow>(
       `SELECT seq, record_id, op, payload, base_version, attempts
-         FROM outbox
+         FROM outbox AS o
         WHERE leased_at IS NULL
           AND attempts < ?
+          AND seq = (SELECT MIN(seq) FROM outbox
+                      WHERE record_id = o.record_id AND attempts < ?)
         ORDER BY seq ASC
         LIMIT ?`,
+      MAX_ATTEMPTS,
       MAX_ATTEMPTS,
       BATCH_SIZE,
     );
@@ -118,6 +128,16 @@ async function applyResults(
 
       if (result.status === 'applied') {
         await db.runAsync('DELETE FROM outbox WHERE seq = ?', row.seq);
+
+        // Edits queued behind this one were captured against the version we
+        // knew at the time. They are now edits on top of what the server just
+        // assigned, so say so, or the server will flag our own chain as a
+        // conflict.
+        await db.runAsync(
+          'UPDATE outbox SET base_version = ? WHERE record_id = ? AND leased_at IS NULL',
+          result.version,
+          row.record_id,
+        );
 
         // Only mark the record synced if nothing newer is still queued for it.
         // Otherwise the tech sees a green check while an edit is still in

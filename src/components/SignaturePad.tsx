@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Modal, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { color, radius, space, TOUCH, type } from './theme';
@@ -105,10 +105,13 @@ function DrawSurface({
   const [paths, setPaths] = useState<string[]>(initial?.paths ?? []);
   const [livePath, setLivePath] = useState<string | null>(null);
   const size = useRef({ w: initial?.w ?? 1, h: initial?.h ?? 1 });
+  // The stroke in progress. Only the touch handlers below read or write it,
+  // never render, but the compiler lint cannot see past PanResponder.create.
   const current = useRef('');
 
-  const responder = useRef(
-    PanResponder.create({
+  const responder = useMemo(() => {
+    // eslint-disable-next-line react-hooks/refs -- handlers run on touch events, not during render
+    return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
@@ -130,8 +133,8 @@ function DrawSurface({
         setLivePath(null);
         current.current = '';
       },
-    }),
-  ).current;
+    });
+  }, []);
 
   return (
     <View style={styles.surface}>
@@ -163,9 +166,7 @@ function DrawSurface({
         <Pressable
           style={styles.confirm}
           onPress={() =>
-            onDone(
-              paths.length > 0 ? { w: size.current.w, h: size.current.h, paths } : null,
-            )
+            onDone(paths.length > 0 ? { w: size.current.w, h: size.current.h, paths } : null)
           }
         >
           <Text style={styles.confirmText}>{doneText}</Text>
